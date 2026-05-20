@@ -1,0 +1,52 @@
+sensors:
+  - name: "客厅温湿度"
+    did: "YOUR_SENSOR_DID"
+    type: "temperature_humidity"
+    room: "客厅"
+    properties:
+      temperature: "prop.2.1"
+      humidity: "prop.2.2"
+
+  - name: "卧室PM25"
+    did: "YOUR_PM25_DID"
+    type: "pm25"
+    room: "卧室"
+    properties:
+      pm25: "prop.3.1"
+
+controllers:
+  - name: "客厅空调"
+    did: "YOUR_AC_DID"
+    type: "air_conditioner"
+    room: "客厅"
+    actions:
+      turn_on:
+        - siid: 2
+          piid: 1
+          value: true
+      turn_off:
+        - siid: 2
+          piid: 1
+          value: false
+      set_mode:
+        - siid: 2
+          piid: 2
+          value: "{mode}"
+      set_temperature:
+        - siid: 2
+          piid: 3
+          value: "{temperature}"
+
+  - name: "卧室加湿器"
+    did: "YOUR_HUMIDIFIER_DID"
+    type: "humidifier"
+    room: "卧室"
+    actions:
+      turn_on:
+        - siid: 2
+          piid: 1
+          value: true
+      turn_off:
+        - siid: 2
+          piid: 1
+          value: false
