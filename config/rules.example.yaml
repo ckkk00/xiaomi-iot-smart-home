@@ -1,0 +1,47 @@
+rules:
+  - name: "高温自动开空调"
+    enabled: true
+    priority: 1
+    cooldown: 1800
+    condition: "sensors.客厅温湿度.temperature > 28"
+    actions:
+      - device: "客厅空调"
+        action: "turn_on"
+      - device: "客厅空调"
+        action: "set_temperature"
+        params:
+          temperature: 26
+
+  - name: "低温自动开暖气"
+    enabled: true
+    priority: 2
+    cooldown: 1800
+    condition: "sensors.客厅温湿度.temperature < 18"
+    actions:
+      - device: "客厅空调"
+        action: "turn_on"
+      - device: "客厅空调"
+        action: "set_temperature"
+        params:
+          temperature: 22
+
+  - name: "PM2.5超标告警"
+    enabled: true
+    priority: 1
+    cooldown: 3600
+    condition: "sensors.卧室PM25.pm25 > 75"
+    actions:
+      - device: "alert"
+        action: "send_alert"
+        params:
+          level: "warning"
+          message: "PM2.5超标"
+
+  - name: "舒适区间关闭空调"
+    enabled: true
+    priority: 5
+    cooldown: 900
+    condition: "sensors.客厅温湿度.temperature >= 22 and sensors.客厅温湿度.temperature <= 26"
+    actions:
+      - device: "客厅空调"
+        action: "turn_off"
