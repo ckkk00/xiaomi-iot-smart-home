@@ -1,0 +1,18 @@
+xiaomi:
+  token: "YOUR_MIOT_TOKEN"
+  base_url: "https://api.home.mi.com"
+
+database:
+  path: "data/smart_home.db"
+
+collector:
+  interval: 300
+
+dashboard:
+  host: "0.0.0.0"
+  port: 5000
+  debug: false
+
+logging:
+  level: "INFO"
+  file: "logs/smart_home.log"
