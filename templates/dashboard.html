@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能家居环境监测</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+    <header><h1>智能家居环境监测与控制系统</h1><p class="subtitle">感知 → 推理 → 执行 → 展示</p></header>
+    <section class="section"><h2>实时环境数据</h2><div class="card-grid" id="sensor-cards"><div class="card loading">加载中...</div></div></section>
+    <section class="section"><h2>数据趋势</h2>
+        <div class="chart-controls">
+            <select id="chart-device"><option value="">选择设备</option></select>
+            <select id="chart-range"><option value="1">1小时</option><option value="6">6小时</option><option value="24" selected>24小时</option></select>
+        </div>
+        <div id="trend-chart" class="chart"></div>
+    </section>
+    <section class="section"><h2>自动化规则</h2><div class="table-wrap"><table><thead><tr><th>规则名</th><th>条件</th><th>优先级</th><th>状态</th></tr></thead><tbody id="rules-body"><tr><td colspan="4">加载中...</td></tr></tbody></table></div></section>
+    <section class="section"><h2>执行日志</h2><div class="table-wrap"><table><thead><tr><th>时间</th><th>规则</th><th>设备</th><th>动作</th><th>结果</th></tr></thead><tbody id="actions-body"><tr><td colspan="5">加载中...</td></tr></tbody></table></div></section>
+</div>
+<script>
+const socket = io();
+function loadSensors(){fetch('/api/sensors').then(r=>r.json()).then(data=>{
+    const grid=document.getElementById('sensor-cards');
+    if(!data.length){grid.innerHTML='<div class="card empty">暂无数据</div>';return;}
+    grid.innerHTML=data.map(s=>`<div class="card"><div class="card-icon">${{'temperature':'🌡️','humidity':'💧','pm25':'🌫️'}[s.property]||'📊'}</div><div class="card-value" id="v-${s.device}-${s.property}">${s.value}</div><div class="card-unit">${s.unit}</div><div class="card-label">${s.device}</div></div>`).join('');
+    const sel=document.getElementById('chart-device');
+    sel.innerHTML='<option value="">选择设备</option>'+[...new Set(data.map(s=>`${s.device}|${s.property}`))].map(u=>{const[d,p]=u.split('|');return`<option value="${d}/${p}">${d}-${p}</option>`}).join('');
+}).catch(()=>{})}
+function loadChart(){const sel=document.getElementById('chart-device').value,h=document.getElementById('chart-range').value;if(!sel)return;const[d,p]=sel.split('/');fetch(`/api/sensors/${d}/${p}/history?hours=${h}`).then(r=>r.json()).then(data=>{if(!window._chart)window._chart=echarts.init(document.getElementById('trend-chart'));window._chart.setOption({title:{text:`${d}-${p}`,left:'center'},tooltip:{trigger:'axis'},xAxis:{type:'category',data:data.map(i=>new Date(i.timestamp*1000).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}))},yAxis:{type:'value'},series:[{data:data.map(i=>i.value),type:'line',smooth:true,areaStyle:{opacity:0.15}}]});});}
+document.getElementById('chart-device').onchange=loadChart;
+document.getElementById('chart-range').onchange=loadChart;
+function loadRules(){fetch('/api/rules').then(r=>r.json()).then(rules=>{document.getElementById('rules-body').innerHTML=rules.map(r=>`<tr><td><strong>${r.name}</strong></td><td><code>${r.condition}</code></td><td>${r.priority}</td><td>${r.in_cooldown?'<span class="badge cooldown">冷却</span>':'<span class="badge active">就绪</span>'}</td></tr>`).join('')||'<tr><td colspan="4">暂无</td></tr>';});}
+function loadActions(){fetch('/api/actions?limit=20').then(r=>r.json()).then(logs=>{document.getElementById('actions-body').innerHTML=logs.map(l=>`<tr><td>${new Date(l.timestamp*1000).toLocaleString('zh-CN')}</td><td>${l.rule_name||'-'}</td><td>${l.device_name}</td><td>${l.action}</td><td>${l.success?'<span class="badge success">成功</span>':'<span class="badge fail">失败</span>'}</td></tr>`).join('')||'<tr><td colspan="5">暂无</td></tr>';});}
+socket.on('sensor_update',d=>{const el=document.getElementById(`v-${d.device}-${d.property}`);if(el)el.textContent=d.value;});
+loadSensors();loadRules();loadActions();setInterval(loadSensors,30000);setInterval(loadActions,60000);
+</script>
+</body>
+</html>
